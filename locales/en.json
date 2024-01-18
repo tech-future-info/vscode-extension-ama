@@ -1,5 +1,6 @@
 {
   "enter-your-openai-api-key": "Enter your OpenAI API Key",
+  "enter-your-azure-openai-api-key": "Enter your Azure OpenAI API Key",
   "no-openai-api-key-provided": "No OpenAI API Key provided.",
   "no-workspace-opened": "No workspace opened.",
   "no-changes-to-commit": "No changes to commit",

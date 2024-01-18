@@ -15,6 +15,19 @@ async function getOpenAIKeyAMA(): Promise<string> {
   return openaiKey
 }
 
+async function getOpenAIKeyAMAAzure(): Promise<string> {
+  let openaiKey = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('openaiAzureApiKey') as string | undefined
+  if (!openaiKey) {
+    openaiKey = await vscode.window.showInputBox({ prompt: i18n.t('enter-your-azure-openai-api-key') })
+    if (!openaiKey) {
+      vscode.window.showErrorMessage(i18n.t('no-openai-api-key-provided'))
+      return ''
+    }
+    await vscode.workspace.getConfiguration('vscodeAskCodeAnything').update('openaiAzureApiKey', openaiKey, vscode.ConfigurationTarget.Global)
+  }
+  return openaiKey
+}
+
 async function getChatCompletionAMA(prompt: string) {
   // const openaiKey = '';
   const openaiKey = await getOpenAIKeyAMA()
@@ -41,45 +54,6 @@ async function getChatCompletionAMA(prompt: string) {
         },
         
       ],
-      // functions: useConventionalCommit
-      //   ? [
-      //       {
-      //         name: 'createConventionalCommit',
-      //         description: 'Create a conventional commit message.',
-      //         parameters: {
-      //           type: 'object',
-      //           properties: {
-      //             type: {
-      //               type: 'string',
-      //               description: 'The type of the commit.',
-      //             },
-      //             scope: {
-      //               type: 'string',
-      //               description: 'The scope or scopes of the commit, separated by a slash.',
-      //             },
-      //             description: {
-      //               type: 'string',
-      //               description: 'The description of the commit.',
-      //             },
-      //             body: {
-      //               type: 'string',
-      //               description: 'The body of the commit.',
-      //             },
-      //             footer: {
-      //               type: 'string',
-      //               description: 'The footer of the commit.',
-      //             },
-      //             isBreakingChange: {
-      //               type: 'boolean',
-      //               description: 'If the commit introduces a breaking change.',
-      //             },
-      //           },
-      //           required: ['type', 'description'],
-      //         },
-      //       },
-      //     ]
-      //   : undefined,
-      // function_call: useConventionalCommit ? { name: 'createConventionalCommit' } : undefined,
     })
   }
   catch (error) {
@@ -96,7 +70,20 @@ async function processAMA(title: string, operation: (commitMsg: string) => Promi
     title,
     cancellable: false,
   }, async () => {
-    const chatCompletion = await getChatCompletionAMAAzure(title)
+    const chatCompletion = await getChatCompletionAMA(title)
+    // const useConventionalCommit = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('useConventionalCommit') as boolean
+    // const commitMsg = processChatCompletion(chatCompletion, useConventionalCommit)
+    await operation(chatCompletion?.choices[0].message?.content || '')
+  })
+}
+
+async function processAMAAzure(title: string, operation: (commitMsg: string) => Promise<void>) {
+  await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title,
+    cancellable: false,
+  }, async () => {
+    const chatCompletion = await getChatCompletionAMA(title)
     // const useConventionalCommit = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('useConventionalCommit') as boolean
     // const commitMsg = processChatCompletion(chatCompletion, useConventionalCommit)
     await operation(chatCompletion?.choices[0].message?.content || '')
@@ -105,25 +92,23 @@ async function processAMA(title: string, operation: (commitMsg: string) => Promi
 
 
 async function getChatCompletionAMAAzure(prompt: string) {
-  const openaiKey = '';
-  // const openaiKey = await getOpenAIKeyAMA()
+  const openaiKey = await getOpenAIKeyAMAAzure()
   if (!openaiKey)
     return null
 
   // The name of your Azure OpenAI Resource.
   // https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal#create-a-resource
-  const resource = '';
+  const resource = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('AzureOpenaiResource') as string | undefined;
 
   // const model = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('model') as string
   // https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#rest-api-versioning
-  const apiVersion = '';
+  const apiVersion = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('AzureOpenaiResource') as string | undefined;
 
-  const model = '';
+  const model = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('AzureOpenaiModel') as string;
 
   const openai = new OpenAI({
     apiKey: openaiKey,
-    baseURL: `https://${resource}.openai.azure.com/openai/deployments/${model}`,
-    
+    baseURL: `https://${resource}.openai.azure.com/openai/deployments/${model}`,    
     defaultQuery: { 'api-version': apiVersion },
     defaultHeaders: { 'api-key': openaiKey },
   });
@@ -182,39 +167,50 @@ async function getChatCompletionAMAAzure(prompt: string) {
   catch (error) {
     if (error instanceof OpenAI.APIError)
       vscode.window.showErrorMessage(error.message)
-
     return null
   }
 }
+
 
 export function activate(context: vscode.ExtensionContext) {
   const selector: vscode.DocumentSelector = { language: 'plaintext' };
   const editor = vscode.window.activeTextEditor;
 
-  // context.subscriptions.push(vscode.languages.registerDocumentPasteEditProvider(selector, new CopyCountPasteEditProvider(), {
-	// 	id: 'copyCount',
-	// 	pasteMimeTypes: ['text/plain'],
-	// }));
-
   context.subscriptions.push(vscode.commands.registerCommand('ama', async () => {
+    vscode.window.showInformationMessage('AMA')
+
+  })) 
+
+  context.subscriptions.push(vscode.commands.registerCommand('amaAnalyze', async () => {
     let word = '';
+    let selection: vscode.Position | vscode.Range | vscode.Selection;
     if (editor) {
       const document = editor.document;
-      const selection = editor.selection;
-
-      // // Get the word within the selection
-       word = document.getText(selection);
+      selection = editor.selection;
+      word = document.getText(selection);
     }
     await processAMA('explain following code ' + word, async (commitMsg) => {
-
-      vscode.window.showInformationMessage('AMA')
+      // vscode.window.showInformationMessage('AMA')
       if (editor) {
-        const document = editor.document;
-        const selection = editor.selection;
-  
-        // // Get the word within the selection
-        const word = document.getText(selection);
-        // const reversed = word.split('').reverse().join('');
+        editor.edit(editBuilder => {
+          // editBuilder.replace(selection, commitMsg);
+          editBuilder.insert(editor.selection.end, commitMsg)
+        });
+      }
+    })    
+  }))
+
+  context.subscriptions.push(vscode.commands.registerCommand('amaAnalyzeAzure', async () => {
+    let word = '';
+    let selection: vscode.Position | vscode.Range | vscode.Selection;
+    if (editor) {
+      const document = editor.document;
+      selection = editor.selection;
+      word = document.getText(selection);
+    }
+    await processAMAAzure('explain following code ' + word, async (commitMsg) => {
+      // vscode.window.showInformationMessage('AMA')
+      if (editor) {
         editor.edit(editBuilder => {
           editBuilder.replace(selection, commitMsg);
         });
@@ -229,6 +225,16 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showInformationMessage('AMA')
     })
   }))  
+
+  context.subscriptions.push(vscode.commands.registerCommand('amaAzure', async () => {
+    vscode.window.showInformationMessage('amaAzure')
+
+  })) 
+
+  context.subscriptions.push(vscode.commands.registerCommand('amaOptimizeAzure', async () => {
+    vscode.window.showInformationMessage('amaOptimizeAzure')
+
+  })) 
 }
 
 export function deactivate() { }

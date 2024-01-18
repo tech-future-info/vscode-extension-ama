@@ -38,6 +38,18 @@
       {
         "command": "amaOptimize",
         "title": "Ask Me to Optimize"
+      },
+      {
+        "command": "amaAzure",
+        "title": "Ask Code Anything"
+      },
+      {
+        "command": "amaAnalyzeAzure",
+        "title": "Ask Me to Analyze"
+      },
+      {
+        "command": "amaOptimizeAzure",
+        "title": "Ask Me to Optimize"
       }
     ],
     "configuration": {
@@ -57,20 +69,25 @@
             "default": "gpt-3.5-turbo",
             "description": "OpenAI Model to be used"
           },        
-          "vscodeAskCodeAnything.openaiAzureBaseURL": {
-            "type": "string",
-            "default": "https://api.openai.com/v1",
-            "description": "Azure OpenAI API Base URL"
-          },
-          "vscodeAskCodeAnything.openaiAzureApiKey": {
+          "vscodeAskCodeAnything.AzureOpenaiApiVersion": {
             "type": "string",
             "default": "",
-            "description": "Azure OpenAI API Key"
+            "description": "Azure API Version"
           },
-          "vscodeAskCodeAnything.openaiAzureModel": {
+          "vscodeAskCodeAnything.AzureOpenaiApiKey": {
             "type": "string",
-            "default": "gpt-3.5-turbo",
-            "description": "Azure OpenAI Model to be used"
+            "default": "",
+            "description": "Azure API Key"
+          },
+          "vscodeAskCodeAnything.AzureOpenaiResource": {
+            "type": "string",
+            "default": "",
+            "description": "Azure Resource to be used"
+          },
+          "vscodeAskCodeAnything.AzureOpenaiModel": {
+            "type": "string",
+            "default": "",
+            "description": "Azure Model to be used"
           }
       }
     }
