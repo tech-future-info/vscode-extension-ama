@@ -83,7 +83,7 @@ async function processAMAAzure(title: string, operation: (commitMsg: string) => 
     title,
     cancellable: false,
   }, async () => {
-    const chatCompletion = await getChatCompletionAMA(title)
+    const chatCompletion = await getChatCompletionAMAAzure(title)
     // const useConventionalCommit = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('useConventionalCommit') as boolean
     // const commitMsg = processChatCompletion(chatCompletion, useConventionalCommit)
     await operation(chatCompletion?.choices[0].message?.content || '')
@@ -95,24 +95,31 @@ async function getChatCompletionAMAAzure(prompt: string) {
   const openaiKey = await getOpenAIKeyAMAAzure()
   if (!openaiKey)
     return null
-
+    vscode.window.showInformationMessage(openaiKey)  
   // The name of your Azure OpenAI Resource.
   // https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal#create-a-resource
   const resource = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('AzureOpenaiResource') as string | undefined;
-
+  vscode.window.showInformationMessage(resource as string)  
   // const model = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('model') as string
   // https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#rest-api-versioning
   const apiVersion = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('AzureOpenaiResource') as string | undefined;
-
+  vscode.window.showInformationMessage(apiVersion as string)  
   const model = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('AzureOpenaiModel') as string;
-
+  vscode.window.showInformationMessage(model)  
+  const openaiConfig = {
+    apiKey: openaiKey,
+    baseURL: `https://${resource}.openai.azure.com/openai/deployments/${model}/chat/completions`,    
+    defaultQuery: { 'api-version': apiVersion },
+    defaultHeaders: { 'api-key': openaiKey },
+  };
+  vscode.window.showInformationMessage(JSON.stringify(openaiConfig)  )
   const openai = new OpenAI({
     apiKey: openaiKey,
-    baseURL: `https://${resource}.openai.azure.com/openai/deployments/${model}`,    
+    baseURL: `https://${resource}.openai.azure.com/openai/deployments/${model}/chat/completions`,    
     defaultQuery: { 'api-version': apiVersion },
     defaultHeaders: { 'api-key': openaiKey },
   });
-
+  // vscode.window.showInformationMessage(openai)  
   try {
     return await openai.chat.completions.create({
       model,
@@ -175,15 +182,33 @@ async function getChatCompletionAMAAzure(prompt: string) {
 export function activate(context: vscode.ExtensionContext) {
   const selector: vscode.DocumentSelector = { language: 'plaintext' };
   const editor = vscode.window.activeTextEditor;
-
+  console.log('activating')
   context.subscriptions.push(vscode.commands.registerCommand('ama', async () => {
     vscode.window.showInformationMessage('AMA')
-
+    vscode.window.showInformationMessage('activating AMA')
+    let word = '';
+    let selection: vscode.Position | vscode.Range | vscode.Selection;
+    vscode.window.showInformationMessage('activating amaAnalyze')  
+    if (editor) {
+      const document = editor.document;
+      selection = editor.selection;
+      word = document.getText(selection);
+    }
+    await processAMA(word, async (commitMsg) => {
+      // vscode.window.showInformationMessage('AMA')
+      if (editor) {
+        editor.edit(editBuilder => {
+          // editBuilder.replace(selection, commitMsg);
+          editBuilder.insert(editor.selection.end, commitMsg)
+        });
+      }
+    })
   })) 
 
   context.subscriptions.push(vscode.commands.registerCommand('amaAnalyze', async () => {
     let word = '';
     let selection: vscode.Position | vscode.Range | vscode.Selection;
+    vscode.window.showInformationMessage('activating amaAnalyze')  
     if (editor) {
       const document = editor.document;
       selection = editor.selection;
@@ -200,9 +225,31 @@ export function activate(context: vscode.ExtensionContext) {
     })    
   }))
 
+  context.subscriptions.push(vscode.commands.registerCommand('amaAzure', async () => {    
+    // vscode.window.showInformationMessage('activating amaAzure')
+    let word = '';
+    let selection: vscode.Position | vscode.Range | vscode.Selection;
+    vscode.window.showInformationMessage('activating amaAzure')  
+    if (editor) {
+      const document = editor.document;
+      selection = editor.selection;
+      word = document.getText(selection);
+    }
+    await processAMAAzure(word, async (commitMsg) => {
+      // vscode.window.showInformationMessage('AMA')
+      if (editor) {
+        editor.edit(editBuilder => {
+          // editBuilder.replace(selection, commitMsg);
+          editBuilder.insert(editor.selection.end, commitMsg)
+        });
+      }
+    })
+  })) 
+
   context.subscriptions.push(vscode.commands.registerCommand('amaAnalyzeAzure', async () => {
     let word = '';
     let selection: vscode.Position | vscode.Range | vscode.Selection;
+    vscode.window.showInformationMessage('activating amaAnalyzeAzure')  
     if (editor) {
       const document = editor.document;
       selection = editor.selection;
@@ -219,6 +266,7 @@ export function activate(context: vscode.ExtensionContext) {
   }))
 
   context.subscriptions.push(vscode.commands.registerCommand('amaOptimize', async () => {
+    vscode.window.showInformationMessage('activating amaOptimize')  
     await processAMA('Optimize the following code', async (commitMsg) => {
       // const currentBranch = await gitHelper.revparse(['--abbrev-ref', 'HEAD'])
       // await gitHelper.commit(commitMsg).push('origin', currentBranch)
@@ -226,15 +274,12 @@ export function activate(context: vscode.ExtensionContext) {
     })
   }))  
 
-  context.subscriptions.push(vscode.commands.registerCommand('amaAzure', async () => {
-    vscode.window.showInformationMessage('amaAzure')
-
-  })) 
 
   context.subscriptions.push(vscode.commands.registerCommand('amaOptimizeAzure', async () => {
     vscode.window.showInformationMessage('amaOptimizeAzure')
-
+    vscode.window.showInformationMessage('activating amaOptimizeAzure')  
   })) 
+
 }
 
 export function deactivate() { }

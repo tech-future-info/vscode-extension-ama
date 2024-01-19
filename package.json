@@ -32,25 +32,25 @@
         "title": "Ask Code Anything"
       },
       {
+        "command": "amaAzure",
+        "title": "Ask Code Anything (Azure)"
+      },
+      {
         "command": "amaAnalyze",
         "title": "Ask Me to Analyze"
       },
       {
         "command": "amaOptimize",
         "title": "Ask Me to Optimize"
-      },
-      {
-        "command": "amaAzure",
-        "title": "Ask Code Anything"
-      },
+      },      
       {
         "command": "amaAnalyzeAzure",
-        "title": "Ask Me to Analyze"
+        "title": "Ask Me to Analyze (Azure)"
       },
       {
         "command": "amaOptimizeAzure",
-        "title": "Ask Me to Optimize"
-      }
+        "title": "Ask Me to Optimize (Azure)"
+      }      
     ],
     "configuration": {
       "properties": {        
