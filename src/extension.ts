@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import OpenAI from 'openai'
 import { i18n } from './i18n'
 
-async function getOpenAIKeyAMA(): Promise<string> {
+export async function getOpenAIKeyAMA(): Promise<string> {
   let openaiKey = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('openaiApiKey') as string | undefined
   if (!openaiKey) {
     openaiKey = await vscode.window.showInputBox({ prompt: i18n.t('enter-your-openai-api-key') })
@@ -15,7 +15,7 @@ async function getOpenAIKeyAMA(): Promise<string> {
   return openaiKey
 }
 
-async function getOpenAIKeyAMAAzure(): Promise<string> {
+export async function getOpenAIKeyAMAAzure(): Promise<string> {
   let openaiKey = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('openaiAzureApiKey') as string | undefined
   if (!openaiKey) {
     openaiKey = await vscode.window.showInputBox({ prompt: i18n.t('enter-your-azure-openai-api-key') })
@@ -62,32 +62,6 @@ async function getChatCompletionAMA(prompt: string) {
   }
 }
 
-async function processAMA(title: string, operation: (aiResponse: string) => Promise<void>) {
-  await vscode.window.withProgress({
-    location: vscode.ProgressLocation.Notification,
-    title,
-    cancellable: false,
-  }, async () => {
-    const chatCompletion = await getChatCompletionAMA(title)
-    // const useConventionalCommit = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('useConventionalCommit') as boolean
-    // const aiResponse = processChatCompletion(chatCompletion, useConventionalCommit)
-    await operation(chatCompletion?.choices[0].message?.content || '')
-  })
-}
-
-async function processAMAAzure(title: string, operation: (aiResponse: string) => Promise<void>) {
-  await vscode.window.withProgress({
-    location: vscode.ProgressLocation.Notification,
-    title,
-    cancellable: false,
-  }, async () => {
-    const chatCompletion = await getChatCompletionAMAAzure(title)
-    // const useConventionalCommit = vscode.workspace.getConfiguration('vscodeAskCodeAnything').get('useConventionalCommit') as boolean
-    // const aiResponse = processChatCompletion(chatCompletion, useConventionalCommit)
-    await operation(chatCompletion?.choices[0].message?.content || '')
-  })
-}
-
 async function getChatCompletionAMAAzure(prompt: string) {
   const openaiKey = await getOpenAIKeyAMAAzure()
   if (!openaiKey)
@@ -109,20 +83,20 @@ async function getChatCompletionAMAAzure(prompt: string) {
     defaultHeaders: { 'api-key': openaiKey },
   };
   vscode.window.showInformationMessage(JSON.stringify(openaiConfig)  )
-  const selector: vscode.DocumentSelector = { language: 'plaintext' };
-  const editor = vscode.window.activeTextEditor;
-let word = '';
-    let selection: vscode.Position | vscode.Range | vscode.Selection;
-if (editor) {
-      const document = editor.document;
-      selection = editor.selection;
-      word = document.getText(selection);
-    }
-    if (editor) {
-        editor.edit(editBuilder => {
-          editBuilder.replace(selection, JSON.stringify(openaiConfig));
-        });
-      }
+//   const selector: vscode.DocumentSelector = { language: 'plaintext' };
+//   const editor = vscode.window.activeTextEditor;
+// let word = '';
+//     let selection: vscode.Position | vscode.Range | vscode.Selection;
+// if (editor) {
+//       const document = editor.document;
+//       selection = editor.selection;
+//       word = document.getText(selection);
+//     }
+//     if (editor) {
+//         editor.edit(editBuilder => {
+//           editBuilder.replace(selection, JSON.stringify(openaiConfig));
+//         });
+//       }
   const openai = new OpenAI({
     apiKey: openaiKey,
     baseURL: `https://${resource}.openai.azure.com/openai/deployments/${model}/chat/completions`,    
@@ -148,7 +122,29 @@ if (editor) {
     return null
   }
 }
-        
+
+async function processAMA(title: string, operation: (aiResponse: string) => Promise<void>) {
+  await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title,
+    cancellable: false,
+  }, async () => {
+    const chatCompletion = await getChatCompletionAMA(title)
+    await operation(chatCompletion?.choices[0].message?.content || '')
+  })
+}
+
+async function processAMAAzure(title: string, operation: (aiResponse: string) => Promise<void>) {
+  await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title,
+    cancellable: false,
+  }, async () => {
+    const chatCompletion = await getChatCompletionAMAAzure(title)
+    await operation(chatCompletion?.choices[0].message?.content || '')
+  })
+}
+       
 export function activate(context: vscode.ExtensionContext) {
   const selector: vscode.DocumentSelector = { language: 'plaintext' };
   const editor = vscode.window.activeTextEditor;
@@ -221,8 +217,8 @@ export function activate(context: vscode.ExtensionContext) {
     await processAMAAzure(word, async (aiResponse) => {      
       if (editor) {
         editor.edit(editBuilder => {
-          // editBuilder.replace(selection, aiResponse);
-          editBuilder.insert(editor.selection.end, aiResponse)
+          editBuilder.replace(selection, aiResponse);
+          // editBuilder.insert(editor.selection.end, aiResponse)
         });
       }
     })

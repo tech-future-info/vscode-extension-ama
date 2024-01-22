@@ -1,0 +1,8 @@
+{
+  "enter-your-openai-api-key": "ನಿಮ್ಮ OpenAI API ಕೀಯನ್ನು ನಮೂದಿಸಿ",
+  "enter-your-azure-openai-api-key": "ನಿಮ್ಮ Azure API ಕೀಯನ್ನು ನಮೂದಿಸಿ",
+  "no-openai-api-key-provided": "ಯಾವುದೇ OpenAI API ಕೀಯನ್ನು ಒದಗಿಸಲಾಗಿಲ್ಲ.",
+  "no-openai-azure-api-key-provided": "ಯಾವುದೇ Azure API ಕೀಯನ್ನು ಒದಗಿಸಲಾಗಿಲ್ಲ",
+  "no-workspace-opened": "ಯಾವುದೇ ಕಾರ್ಯಕ್ಷೇತ್ರವನ್ನು ತೆರೆಯಲಾಗಿಲ್ಲ.",
+  "no-changes-to-commit": "ಬದ್ಧತೆಗೆ ಯಾವುದೇ ಬದಲಾವಣೆಗಳಿಲ್ಲ."
+}
